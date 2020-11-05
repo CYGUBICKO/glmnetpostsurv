@@ -19,11 +19,13 @@
 #' @keywords internal
 
 glmnetHazard <- function(fit, Y, X, s, wt = NULL){
-	if (is.null(wt)) wt <- rep(1, NROW(Y))
+	if (is.null(wt)) {
+		wt <- rep(1, NROW(Y))
+	}
 	beta.hat <- drop(predict(fit, type = "coefficients", s = s))
 	xmeans <- apply(X, 2, mean)
 	X.centered <- X - rep(xmeans, each = NROW(X))
-	oldlp <- unname(drop(X.centered %*% beta.hat))
+	oldlp <- as.vector(X.centered %*% beta.hat)
 	oldrisk <- exp(oldlp)
 	status <- Y[, ncol(Y)]
 	dtime <- Y[, ncol(Y) - 1]

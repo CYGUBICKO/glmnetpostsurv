@@ -2,5 +2,5 @@
 glmnetsurvfit <- function(fit, Y, X, newX, s, wt = NULL,...) UseMethod("glmnetsurvfit")
 
 #' @export
-glmnetbasehaz <- function(fit, centered = TRUE) UseMethod("glmnetbasehaz")
+glmnetbasehaz <- function(fit, Y, X, s, wt = NULL, centered = TRUE) UseMethod("glmnetbasehaz")
 

@@ -5,5 +5,5 @@
 \alias{glmnetpostsurv}
 \title{Perform post fitting procedures to glmnet survival model}
 \description{
-Extends functionality of survival models in \code{link[glmnet]{glmnet}} to compute survival curves and other calibrations.
+Extends functionality of survival models in \code{\link[glmnet]{glmnet}} to compute survival curves and other calibrations.
 }

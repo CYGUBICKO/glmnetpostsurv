@@ -9,7 +9,7 @@
 \usage{
 \method{glmnetsurvfit}{glmnet}(fit, Y, X, newX, s, wt = NULL, ...)
 
-\method{glmnetbasehaz}{glmnet}(fit, centered = TRUE)
+\method{glmnetbasehaz}{glmnet}(fit, Y, X, s, wt = NULL, centered = TRUE)
 }
 \arguments{
 \item{fit}{fitted \code{\link[glmnet]{glmnet}} object}
@@ -18,7 +18,7 @@
 
 \item{X}{input matrix used in the \code{fit}.}
 
-\item{newX}{a data frame containing the variables appearing on the right hand side of \code{\link[glmnet]{glmnet}} formula.}
+\item{newX}{a matrix containing the variables appearing in X used in fitting \code{\link[glmnet]{glmnet}} model.}
 
 \item{s}{value of \code{lambda} at which predictions are required.}
 
@@ -64,7 +64,7 @@ gmodel <- glmnet(X, sobj, 'cox', alpha = alp, lambda = lam)
 gsurv <- glmnetsurvfit(fit = gmodel, Y = sobj, X = X, s = lam)
 
 # Baseline survival estimate
-gbsurv <- glmnetbasehaz(gmodel, centered = FALSE)
+gbsurv <- glmnetbasehaz(gmodel, Y = sobj, X = X, s = lam, centered = FALSE)
 
 }
 \seealso{

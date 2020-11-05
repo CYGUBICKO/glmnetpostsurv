@@ -28,6 +28,23 @@ methods.Rout: R/methods.R
 
 ######################################################################
 
+## Package installation and checks
+Ignore += glmnetpostsurv_*
+
+build-package:
+	R CMD build ../glmnetpostsurv
+
+install-package:
+	R CMD INSTALL glmnetpostsurv_*
+
+check-package:
+	echo "devtools::check('.')" | R --slave
+
+update-doc:
+	echo "devtools::document('.')" | R --slave
+
+######################################################################
+
 ### Makestuff
 
 Sources += Makefile
