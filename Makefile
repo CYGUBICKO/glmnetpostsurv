@@ -24,6 +24,8 @@ glmnetHazard.Rout: R/glmnetHazard.R
 
 glmnetsurvfit.Rout: R/glmnetsurvfit.R
 
+postsurvplots.Rout: R/postsurvplots.R
+
 methods.Rout: R/methods.R
 
 ######################################################################
