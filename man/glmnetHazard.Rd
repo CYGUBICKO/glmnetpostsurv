@@ -4,18 +4,10 @@
 \alias{glmnetHazard}
 \title{Compute predicted hazard for glmnet}
 \usage{
-glmnetHazard(fit, Y, X, s, wt = NULL)
+glmnetHazard(object)
 }
 \arguments{
-\item{fit}{fitted \code{\link[glmnet]{glmnet}}.}
-
-\item{Y}{\code{link[survival]{Surv}} object used in the \code{fit}.}
-
-\item{X}{input matrix used in the \code{fit}.}
-
-\item{s}{value of \code{lambda} at which predictions are required.}
-
-\item{wt}{option weight applied.}
+\item{object}{fitted \code{\link[glmnetsurv]{glmnetsurv}} object.}
 }
 \value{
 A list of S3 objects. 

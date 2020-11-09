@@ -28,11 +28,12 @@ Implements plot method for \code{\link[riskRegression]{Score}} for time-dependen
 
 data(veteran, package="survival")
 # glmnet
-lam <- 0.02
-alp <- 0.8
-sobj <- with(veteran, Surv(time, status))
-X <- model.matrix(~factor(trt) + karno + diagtime + age + prior, data = veteran)[,-1]
-gfit1 <- glmnet(X, sobj, 'cox', alpha = alp, lambda = lam)
+gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+	, data = veteran
+	, lambda = 0.02
+	, alpha = 0.8
+	, fittype = "fit"
+)
 
 # coxph
 cfit1 <- coxph(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
@@ -43,17 +44,13 @@ cfit1 <- coxph(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
 )
 
 # Evaluate model performance at 90, 180, 365 time points
-score_obj <- Score(list("coxph" = cfit1, "pcox" = gfit1)
+score_obj <- Score(list("coxph" = cfit1, "glmnet" = gfit1)
 	, Surv(time, status) ~ 1
 	, data = veteran
 	, plots = "roc"
 	, metrics = c("auc", "brier")
 	, B = 10
 	, times = c(90, 180, 365)
-	, newdata = X
-	, Y = sobj
-	, X = X
-	, s = lam
 )
 
 # Plot AUC
@@ -66,7 +63,7 @@ plot(score_obj, type = "brier")
 # Prediction error using pec package
 \dontrun{
 	if (require("pec")) {
-		pec_fit <- pec(list("coxph" = cfit1, "pcox" = gfit1)
+		pec_fit <- pec(list("coxph" = cfit1, "glmnet" = gfit1)
 			, Surv(time, status) ~ 1
 			, data = veteran
 			, splitMethod = "Boot632plus"

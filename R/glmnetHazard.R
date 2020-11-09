@@ -2,11 +2,7 @@
 #' 
 #' This code is borrowed from internal function agsurv from survival package. 
 #'
-#' @param fit fitted \code{\link[glmnet]{glmnet}}.
-#' @param Y \code{link[survival]{Surv}} object used in the \code{fit}.
-#' @param X input matrix used in the \code{fit}.
-#' @param s value of \code{lambda} at which predictions are required.
-#' @param wt option weight applied.
+#' @param object fitted \code{\link[glmnetsurv]{glmnetsurv}} object.
 #' @return A list of S3 objects. 
 #' \item{n}{number of observations used in the fit.}
 #' \item{events}{total number of events of interest in the fit.}
@@ -18,10 +14,12 @@
 #' \item{chaz, hazard}{a vector or a matrix of estimated cumulative hazard.}
 #' @keywords internal
 
-glmnetHazard <- function(fit, Y, X, s, wt = NULL){
-	if (is.null(wt)) {
-		wt <- rep(1, NROW(Y))
-	}
+glmnetHazard <- function(object){
+	Y <- object$y
+	X <- object$X
+	wt <- rep(1, NROW(Y))
+	s <- object$s
+	fit <- object$fit
 	beta.hat <- drop(predict(fit, type = "coefficients", s = s))
 	xmeans <- apply(X, 2, mean)
 	X.centered <- X - rep(xmeans, each = NROW(X))

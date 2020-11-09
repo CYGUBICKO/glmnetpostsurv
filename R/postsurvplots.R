@@ -1,11 +1,11 @@
 #' Plot survival and cumulative hazard curves
 #'
 #' Plot estimated survival and cumulative  hazard curves for \code{glmnet} model.
-#'\code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}}
+#'\code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}}
 #' @details
-#' Depending on the specification in \code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}}, this function plots either average or individual survival or cumulative hazard curves. The plot is a \code{\link[ggplot2]{ggplot}} object, hence can be be customized further, see example below.
+#' Depending on the specification in \code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}}, this function plots either average or individual survival or cumulative hazard curves. The plot is a \code{\link[ggplot2]{ggplot}} object, hence can be be customized further, see example below.
 #'
-#' @param x a \code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}} or \code{\link[glmnetpostsurv]{glmnetbasehaz.glmnet}} object.
+#' @param x a \code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}} or \code{\link[glmnetsurv]{glmnetbasehaz.glmnetsurv}} object.
 #' @param ... for future implementations
 #' @param type type of curve to generate. Either \code{type = "surv"} for survival curves or \code{type = "cumhaz"} for cumulative hazard curve.
 #' @param lsize line size for the curves. Default is \code{0.3}.
@@ -18,20 +18,21 @@
 #' library(ggplot2)
 #' data(veteran, package="survival")
 #'
-#' lam <- 0
-#' alp <- 1
-#' sobj <- with(veteran, Surv(time, status))
-#' X <- model.matrix(~factor(trt) + karno + diagtime + age + prior, data = veteran)[,-1]
-#' gmodel <- glmnet(X, sobj, 'cox', alpha = alp, lambda = lam)
+#' gmodel <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = 0
+#'		, alpha = 1
+#' 	, fittype = "fit"
+#'	)
 #'
 #' # Survival estimate
-#' gsurv <- glmnetsurvfit(fit = gmodel, Y = sobj, X = X, s = lam)
+#' gsurv <- glmnetsurvfit(fit = gmodel)
 #' 
 #' # Plot survival curves
 #' plot(gsurv)
 #'
 #' # Baseline survival estimate
-#' gbsurv <- glmnetbasehaz(gmodel, Y = sobj, X = X, s = lam, centered = FALSE)
+#' gbsurv <- glmnetbasehaz(gmodel, centered = FALSE)
 #' plot(gbsurv)
 #'
 #' # Compare overall and baseline cumulative hazard
@@ -108,11 +109,12 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 #'
 #' data(veteran, package="survival")
 #' # glmnet
-#' lam <- 0.02
-#' alp <- 0.8
-#' sobj <- with(veteran, Surv(time, status))
-#' X <- model.matrix(~factor(trt) + karno + diagtime + age + prior, data = veteran)[,-1]
-#' gfit1 <- glmnet(X, sobj, 'cox', alpha = alp, lambda = lam)
+#' gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = 0.02
+#'		, alpha = 0.8
+#' 	, fittype = "fit"
+#'	)
 #'
 #' # coxph
 #' cfit1 <- coxph(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
@@ -123,17 +125,13 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 #'	)
 #'
 #' # Evaluate model performance at 90, 180, 365 time points
-#' score_obj <- Score(list("coxph" = cfit1, "pcox" = gfit1)
+#' score_obj <- Score(list("coxph" = cfit1, "glmnet" = gfit1)
 #' 	, Surv(time, status) ~ 1
 #' 	, data = veteran
 #' 	, plots = "roc"
 #'		, metrics = c("auc", "brier")
 #' 	, B = 10
 #'		, times = c(90, 180, 365)
-#'		, newdata = X
-#'		, Y = sobj
-#'		, X = X
-#' 	, s = lam
 #' )
 #'
 #' # Plot AUC
@@ -146,7 +144,7 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 #' # Prediction error using pec package
 #'\dontrun{
 #' 	if (require("pec")) {
-#'			pec_fit <- pec(list("coxph" = cfit1, "pcox" = gfit1)
+#'			pec_fit <- pec(list("coxph" = cfit1, "glmnet" = gfit1)
 #'				, Surv(time, status) ~ 1
 #' 			, data = veteran
 #' 			, splitMethod = "Boot632plus"
@@ -162,6 +160,7 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 	if (!inherits(x, "Score"))
 		stop("Object should be score. See ?riskRegression::Score")
 	type <- match.arg(type)
+	times <- NULL
 	if (type == "roc"){
 		df <- x$ROC$plotframe
 		FPR <- TPR <- model <- AUC <- lower <- upper <- Brier <- NULL

@@ -28,16 +28,18 @@ postsurvplots.Rout: R/postsurvplots.R
 
 methods.Rout: R/methods.R
 
+pkgsExport.Rout: R/pkgsExport.R
+
 ######################################################################
 
 ## Package installation and checks
-Ignore += glmnetpostsurv_*
+Ignore += glmnetsurv_1*
 
 build-package:
-	R CMD build ../glmnetpostsurv
+	R CMD build .
 
 install-package:
-	R CMD INSTALL glmnetpostsurv_*
+	R CMD INSTALL glmnetsurv_1*
 
 check-package:
 	echo "devtools::check('.')" | R --slave

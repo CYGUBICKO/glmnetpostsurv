@@ -7,7 +7,7 @@
 \method{plot}{glmnetsurvfit}(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, compare = FALSE)
 }
 \arguments{
-\item{x}{a \code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}} or \code{\link[glmnetpostsurv]{glmnetbasehaz.glmnet}} object.}
+\item{x}{a \code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}} or \code{\link[glmnetsurv]{glmnetbasehaz.glmnetsurv}} object.}
 
 \item{...}{for future implementations}
 
@@ -22,30 +22,31 @@ a \code{\link[ggplot2]{ggplot}} object.
 }
 \description{
 Plot estimated survival and cumulative  hazard curves for \code{glmnet} model.
-\code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}}
+\code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}}
 }
 \details{
-Depending on the specification in \code{\link[glmnetpostsurv]{glmnetsurvfit.glmnet}}, this function plots either average or individual survival or cumulative hazard curves. The plot is a \code{\link[ggplot2]{ggplot}} object, hence can be be customized further, see example below.
+Depending on the specification in \code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}}, this function plots either average or individual survival or cumulative hazard curves. The plot is a \code{\link[ggplot2]{ggplot}} object, hence can be be customized further, see example below.
 }
 \examples{
 
 library(ggplot2)
 data(veteran, package="survival")
 
-lam <- 0
-alp <- 1
-sobj <- with(veteran, Surv(time, status))
-X <- model.matrix(~factor(trt) + karno + diagtime + age + prior, data = veteran)[,-1]
-gmodel <- glmnet(X, sobj, 'cox', alpha = alp, lambda = lam)
+gmodel <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+	, data = veteran
+	, lambda = 0
+	, alpha = 1
+	, fittype = "fit"
+)
 
 # Survival estimate
-gsurv <- glmnetsurvfit(fit = gmodel, Y = sobj, X = X, s = lam)
+gsurv <- glmnetsurvfit(fit = gmodel)
 
 # Plot survival curves
 plot(gsurv)
 
 # Baseline survival estimate
-gbsurv <- glmnetbasehaz(gmodel, Y = sobj, X = X, s = lam, centered = FALSE)
+gbsurv <- glmnetbasehaz(gmodel, centered = FALSE)
 plot(gbsurv)
 
 # Compare overall and baseline cumulative hazard
