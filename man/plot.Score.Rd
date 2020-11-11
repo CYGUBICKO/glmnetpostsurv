@@ -32,7 +32,6 @@ gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, data = veteran
 	, lambda = 0.02
 	, alpha = 0.8
-	, fittype = "fit"
 )
 
 # coxph

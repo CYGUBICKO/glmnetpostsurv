@@ -28,6 +28,8 @@ postsurvplots.Rout: R/postsurvplots.R
 
 methods.Rout: R/methods.R
 
+glmnetsurvtheme.Rout: R/glmnetsurvtheme.R
+
 pkgsExport.Rout: R/pkgsExport.R
 
 ######################################################################

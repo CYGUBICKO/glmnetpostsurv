@@ -8,7 +8,6 @@
 glmnetsurv(
   formula = formula(data),
   data = sys.parent(),
-  fittype = c("fit", "cv"),
   family = "cox",
   alpha = 1,
   lambda = NULL,
@@ -25,8 +24,6 @@ similar to \code{\link[survival]{Surv}} function.}
 
 \item{data}{optional data frame containing 
 variables specified in the formula.}
-
-\item{fittype}{whether to perform cross-validation \code{(fittype = "cv")} or fit a \code{glmnet} model \code{(fittype = "fit")}.}
 
 \item{family}{currently, only \code{glmnet} \code{"cox"} family (survival model) is allowed.}
 
@@ -46,13 +43,20 @@ for each factor. See \code{[stats]{model.frame}}.}
 what should happen when the data contain NAs. 
 See \code{[stats]{model.frame}}.}
 
-\item{...}{any of the options in \code{\link[glmnet]{glmnet}} or \code{\link[glmnet]{cv.glmnet}}.}
+\item{...}{any of the options in \code{\link[glmnet]{glmnet}}.}
+}
+\value{
+A list of \code{glmnetsurv} objects:
+\item{fit}{fitted \code{\link[glmnet]{glmnet}} model object}
+\item{X}{model matrix of model terms.}
+\item{y}{Surv object defining the event times and event status.}
+\item{s}{lambda used}
 }
 \description{
 Extends functionality of survival models in \code{\link[glmnet]{glmnet}} to compute survival curves and other calibrations.
 }
 \details{
-This functions offers a user friendly formular-data interface for fitting survival models using \code{\link[glmnet]{glmnet}}. It performs both the cross-validation and model fitting, depending on which option is specified in \code{fittype}. Any additional \code{\link[glmnet]{glmnet}} or \code{\link[glmnet]{cv.glmnet}} arguments can be specified in \code{...}.
+This functions offers a user friendly formular-data interface for fitting survival models using \code{\link[glmnet]{glmnet}}. Any additional \code{\link[glmnet]{glmnet}} arguments can be specified in \code{...}.
 }
 \examples{
 
@@ -64,7 +68,6 @@ gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, data = veteran
 	, lambda = lam
 	, alpha = 1
-	, fittype = "fit"
 )
 print(gfit1)
 
@@ -73,10 +76,9 @@ gfit2 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, data = veteran
 	, lambda = NULL
 	, alpha = 1
-	, fittype = "cv"
 )
 plot(gfit2)
 }
 \seealso{
-\code{\link[survival]{Surv}}, \code{\link[glmnet]{glmnet}}, \code{\link[glmnet]{cv.glmnet}}
+\code{\link[glmnetsurv]{glmnetsurvcv}}, \code{\link[survival]{Surv}}, \code{\link[glmnet]{glmnet}}, \code{\link[glmnet]{cv.glmnet}}
 }

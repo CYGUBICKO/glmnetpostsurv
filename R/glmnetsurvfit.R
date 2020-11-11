@@ -41,7 +41,6 @@
 #'		, data = veteran
 #'		, alpha = alp
 #'		, lambda = lam
-#'		, fittype = "fit"
 #' )
 #'
 #' # Survival estimate
@@ -57,7 +56,7 @@ glmnetsurvfit.glmnetsurv <- function(fit, newdata, ...) {
 	mfit <- fit$fit
 	if(!inherits(mfit, "coxnet"))stop("The object should be a cox model. Use glmnetsurv to fit the model first.")
 	s <- fit$s
-	if (length(s)>1)stop("Refit the glmnetsurv model with a single lambda (optimal). Select fittype = 'fit'.")
+	if (length(s)>1)stop("Refit the glmnetsurv model with a single lambda (optimal). See ?glmnetsurvcv")
 	afit <- glmnetHazard(fit)
 	chaz <- afit$chaz
 	surv.est <- exp(-chaz)
@@ -147,7 +146,6 @@ glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE){
 #'		, data = veteran
 #'		, alpha = alp
 #'		, lambda = lam
-#'		, fittype = "fit"
 #' )
 #' p1 <- predictSurvProb.glmnetsurv(gfit1, newdata = veteran[1:80,], time = 10)
 #'
@@ -158,7 +156,6 @@ glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE){
 #'		, data = veteran
 #'		, alpha = alp2
 #'		, lambda = lam2
-#'		, fittype = "fit"
 #' )
 #' p2 <- predictSurvProb.glmnetsurv(gfit2, newdata = veteran[1:80,], times = 10)
 #'
@@ -206,7 +203,6 @@ predictSurvProb.glmnetsurv <- function(object, newdata, times, ...){
 #'		, data = veteran
 #'		, alpha = alp
 #'		, lambda = lam
-#'		, fittype = "fit"
 #' )
 #' r1 <- predictRisk.glmnetsurv(gfit1, newdata = veteran[1:80,], times = 10)
 #'
@@ -217,7 +213,6 @@ predictSurvProb.glmnetsurv <- function(object, newdata, times, ...){
 #'		, data = veteran
 #'		, alpha = alp2
 #'		, lambda = lam2
-#'		, fittype = "fit"
 #' )
 #' r2 <- predictRisk.glmnetsurv(gfit2, newdata = veteran[1:80,], times = 10)
 #' plot(r1, r2, xlim=c(0,1), ylim=c(0,1)

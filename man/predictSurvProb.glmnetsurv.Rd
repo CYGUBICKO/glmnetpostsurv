@@ -32,7 +32,6 @@ gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, data = veteran
 	, alpha = alp
 	, lambda = lam
-	, fittype = "fit"
 )
 p1 <- predictSurvProb.glmnetsurv(gfit1, newdata = veteran[1:80,], time = 10)
 
@@ -43,7 +42,6 @@ gfit2 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, data = veteran
 	, alpha = alp2
 	, lambda = lam2
-	, fittype = "fit"
 )
 p2 <- predictSurvProb.glmnetsurv(gfit2, newdata = veteran[1:80,], times = 10)
 

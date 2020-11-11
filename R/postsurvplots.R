@@ -22,7 +22,6 @@
 #'		, data = veteran
 #'		, lambda = 0
 #'		, alpha = 1
-#' 	, fittype = "fit"
 #'	)
 #'
 #' # Survival estimate
@@ -91,6 +90,157 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 }
 
 
+#' Plot solution path for glmnetsurvcv
+#'
+#' Plots the cross-validation curve, and upper and lower standard deviation curves, as a function of the optimal lambdas. Also, plots the solution path as a function of optimal lambdas (or randomly picked fold, if \code{refit = FALSE}) or \code{l1}-norm.
+#'
+#' @details
+#' To plot solution path corresponding to optimal alpha and lambda, set \code{refit = TRUE} in \code{\link[glmnetsurv]{glmnetsurvcv}}. The plot is a \code{\link[ggplot2]{ggplot}} object, hence can be be customized further.
+#'
+#' @param x fitted \code{\link[glmnetsurv]{glmnetsurvcv}} object.
+#' @param ... for future implementations
+#' @param type which plot to return. \code{type = "cve"} (default) return a cross-validation curve and \code{type = "fit"} returns coefficient profiles (solution path). See details.
+#' @param xvar only if \code{type = "fit"}. Plot coefficients a function of either lambda (\code{xvar = "lambda"}) or l1-norm (\code{xvar = "l1"}).
+#' @param show_nzero logical. Whether to show number of nonzero coefficients on the plot. Default is \code{show_nzero = FALSE}. Still experimental for \code{type = "cve"}.
+#' @param seed random number generator. Important if \code{refit = FALSE} in \code{\link[glmnetsurv]{glmnetsurvcv}}.
+#'
+#' @return a \code{\link[ggplot2]{ggplot}} object.
+#'
+#' @examples
+#'
+#' library(ggplot2)
+#' data(veteran, package="survival")
+#' # Using a vector of alphas = (0.8, 1)
+#' cv1 <- glmnetsurvcv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#' 	, data = veteran
+#'		, alpha = c(0.8, 1)
+#'		, refit = TRUE
+#'	)
+#' # Plot cross-validation curves
+#' plot(cv1, type = "cve")
+#'
+#' # Plot
+#' plot(cv1, type = "fit")
+#'
+#' @import ggplot2
+#' @export
+
+plot.glmnetsurvcv <- function(x, ..., type = c("cve", "fit"), xvar = c("lambda", "l1"), show_nzero = FALSE, seed = 1234){
+
+	type <- match.arg(type)
+	set.seed(seed)
+	lambda <- cvm <- cvlo <- cvup <- NULL
+	lambda.min <- lambda.1se <- NULL
+	estimate <- term <- l1_norm <- NULL
+	xvar_breaks <- nzero <- NULL
+	sec_axisLabs <- function(var){
+		lamb_tmp_df <- beta_df[, c(var, "nzero")]
+		lamb_tmp_df <- lamb_tmp_df[!duplicated(lamb_tmp_df[[var]]), ]
+		lamb_tmp_df <- lamb_tmp_df[order(-lamb_tmp_df$nzero),]
+		if (var=="lambda"){
+			lambdavals <- log(lamb_tmp_df[[var]])
+		} else {
+			lambdavals <- lamb_tmp_df[[var]]
+		}
+		nzero_breaks <- base::pretty(lambdavals, 5)
+		clossest_lambda_breaks <- unlist(lapply(nzero_breaks, function(x)which.min(abs(lambdavals - x))))
+		closest_lambda_to_breaks <- lambdavals[clossest_lambda_breaks]
+		nzero_labels <- lamb_tmp_df[lambdavals %in% closest_lambda_to_breaks, ]
+		return(data.frame(xvar_breaks = nzero_labels[[var]], nzero = nzero_labels$nzero))
+	}
+	if (type == "cve") {
+		cvm_df <- x$dfs$cvm_df
+		min_df <- x$dfs$min_metrics_df
+		cvm_df$optimal <- ifelse(cvm_df$alpha==x$alpha.optimal, "  (Optimal)", "")
+		min_df$optimal <- ifelse(min_df$alpha==x$alpha.optimal, "  (Optimal)", "")
+		cvm_df$alpha <- as.factor(cvm_df$alpha)
+		cvm_df$alpha_labels <- paste0("alpha== ", cvm_df$alpha, cvm_df$optimal)
+		min_df$alpha_labels <- paste0("alpha== ", min_df$alpha, min_df$optimal)
+		cvm_plot <- (ggplot(cvm_df, aes(x = log(lambda), y = cvm))
+			+ geom_point(colour = "red", size = 0.2)
+			+ geom_errorbar(aes(ymin = cvlo, ymax = cvup)
+				, width = 0.01
+				, colour = "red"
+				, alpha = 0.4
+			)
+			+ facet_wrap(~alpha_labels, labeller = label_parsed, scales = "free_x")
+			+ geom_vline(data = min_df, aes(xintercept = log(lambda.min)), lty = 2, size = 0.2)
+			+ geom_vline(data = min_df, aes(xintercept = log(lambda.1se)), lty = 2, size = 0.2)
+			+ labs(x = expression(log(lambda)), y = "Partial Likelihood Deviance")
+		)
+		if (show_nzero){
+			beta_df <- x$dfs$beta
+			lamb_tmp_df <- beta_df[, c("lambda", "alpha", "nzero")]
+			lamb_tmp_df <- lamb_tmp_df[!duplicated(lamb_tmp_df[c("lambda","alpha", "nzero")]), ]
+			labels_df <- lapply(split(lamb_tmp_df, lamb_tmp_df$alpha), function(dd){
+				df <- sec_axisLabs("lambda")
+				df$alpha <- unique(dd$alpha)
+				df$optimal <- ifelse(df$alpha==x$alpha.optimal, "  (Optimal)", "")
+				df$alpha_labels <- paste0("alpha== ", df$alpha,	df$optimal)
+				return(df)
+			})
+			labels_df <- do.call("rbind", labels_df)
+			cvm_plot <- (cvm_plot
+				+ geom_text(data = labels_df, aes(y = Inf, x = log(xvar_breaks), label = nzero)
+					, hjust = 0, vjust = 1
+				)
+			)
+		}
+		return(cvm_plot)
+	} else {
+
+		xvar <- match.arg(xvar)
+		beta_df <- x$fit$beta
+		facet <- FALSE
+		if (is.null(beta_df)){
+			facet <- TRUE
+			beta_df = x$dfs$beta
+			rand_fold <- sample(unique(beta_df$fold), 1)
+			beta_df <- beta_df[beta_df$fold==rand_fold, ]
+		}
+
+		base_plot <- (ggplot(beta_df, aes(y = estimate, group = term, colour = term))
+			+ scale_colour_viridis_d(option = "inferno")
+			+ labs(y = "Coefficeint estimate", colour = "Predictor")
+			+ theme(legend.position = "none")
+		)
+
+		if (xvar == "lambda"){
+			coef_plot <- (base_plot + geom_line(aes(x = log(lambda)))
+				+ scale_x_continuous(sec.axis = sec_axis(~.
+						, breaks = log(sec_axisLabs("lambda")$xvar_breaks)
+						, labels = sec_axisLabs("lambda")$nzero
+					)
+				)
+				+ labs(x = expression(log(lambda)))
+			)
+			if (!facet){
+				coef_plot <- (coef_plot
+					+ geom_vline(xintercept = log(x$lambda.min), lty = 2, size = 0.2)
+					+ geom_vline(xintercept = log(x$lambda.1se), lty = 2, size = 0.2)
+				)
+			}
+		} else {
+			coef_plot <- (base_plot
+				+ geom_line(aes(x = l1_norm))
+				+ scale_x_continuous(sec.axis = sec_axis(~.
+							, breaks = sec_axisLabs("l1_norm")$xvar_breaks
+							, labels = sec_axisLabs("l1_norm")$nzero
+						)
+					)
+				+ labs(x = "L1 Norm")
+			)
+		}
+		if (facet) {
+			coef_plot <- coef_plot + facet_wrap(~alpha, scales = "free_x")
+			message("These are CV coefficient plots. \nSet refit = TRUE to plot estimates based on whole dataset")
+		}
+		return(coef_plot)
+	}
+}
+
+
+
 #' Prediction performance
 #'
 #' Plots predictive performance of \code{glmnet} in survival analysis in comparison to other models. It uses risk scoring from \code{\link[riskRegression]{Score}}. This extension allows \code{glmnet} to support performance measure scoring by R package \code{pec}. See examples.
@@ -113,7 +263,6 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 #'		, data = veteran
 #'		, lambda = 0.02
 #'		, alpha = 0.8
-#' 	, fittype = "fit"
 #'	)
 #'
 #' # coxph

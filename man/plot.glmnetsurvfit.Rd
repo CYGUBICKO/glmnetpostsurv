@@ -36,7 +36,6 @@ gmodel <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age +
 	, data = veteran
 	, lambda = 0
 	, alpha = 1
-	, fittype = "fit"
 )
 
 # Survival estimate
