@@ -11,7 +11,8 @@
 #' variables specified in the formula.
 #' @param family currently, only \code{glmnet} \code{"cox"} family (survival model) is allowed.
 #' @param alpha the elasticnet mixing parameter, see \code{\link[glmnet]{glmnet}}.
-#' @param lambda optional user supplied lambda sequence, \code{\link[glmnet]{glmnet}}.
+#' @param lambda optional user supplied lambda sequence, see \code{\link[glmnet]{glmnet}}. It is recommended that you supply a sequence of \code{lambdas.optimal} from \code{\link[glmnetsurv]{glmnetsurvcv}} object.
+#'	@param s a single value of lambda over which predictions or extractions are made. Ideally, this value should be obtained from  \code{\link[glmnetsurv]{glmnetsurvcv}} if not known. This can be \code{NULL} (or not specified) if a single value of \code{lambda} is specified, otherwise required if \code{lambda = NULL} or if \code{lambda} is a vector.
 #' @param contrasts.arg an optional list. See 
 #' the contrasts.arg of
 #' \code{[stats]{model.matrix.default}}.
@@ -33,7 +34,7 @@
 #' \item{s}{lambda used}
 #'
 #' @export
-#' @importFrom stats .getXlevels aggregate approx as.formula coef coefficients delete.response model.extract model.frame model.matrix na.omit na.pass predict setNames terms
+#' @importFrom stats .getXlevels aggregate approx as.formula coef coefficients delete.response model.extract model.frame model.matrix na.omit na.pass predict setNames terms reorder
 #' @docType package
 #' @name glmnetsurv
 #' @import glmnet
@@ -55,13 +56,18 @@
 #'		, data = veteran
 #'		, lambda = NULL
 #'		, alpha = 1
+#' 	, s = 0.002
 #'	)
 #' plot(gfit2)
 
 glmnetsurv <- function(formula = formula(data), data = sys.parent()
-	, family = "cox", alpha = 1, lambda = NULL, contrasts.arg = NULL
-	, xlevs = NULL, na.action = na.omit, ...){
+	, family = "cox", alpha = 1, lambda = NULL, s = NULL
+	, contrasts.arg = NULL, xlevs = NULL, na.action = na.omit, ...){
 	if(family != "cox")stop("Only cox family allowed currently!")
+	if ((is.null(lambda)|length(lambda)>1) & is.null(s))stop("s is required for predictions.")
+	if (any(s<0) | length(s)>1)stop("s is a non-negative single value.")
+	
+	if (is.null(s))s <- lambda
 	sobj <- glmnetsurvdata(formula, data, contrasts.arg, xlevs, na.action)
 	X <- sobj$X
 	y <- sobj$y
@@ -74,9 +80,9 @@ glmnetsurv <- function(formula = formula(data), data = sys.parent()
 	
 	if (length(new_args))glmnet_args[names(new_args)] <- new_args
 	fit <- do.call("glmnet", glmnet_args)
-
+	
 	fit$call <- match.call()
-	result <- list(fit = fit, X = X, y = y, s = fit$lambda
+	result <- list(fit = fit, X = X, y = y, s = s
 		, contrasts = contrasts, na.action = na.action
 		, xlevels = xlevels, terms = Terms2
 	)
@@ -297,3 +303,53 @@ glmnetsurvdata <- function(formula = formula(data), data = sys.parent()
   	return(result)
 }
 
+
+#' Compute variable importance of glmnetsurv object
+#'
+#' @aliases varImp
+#'
+#' @details
+#' If \code{show_sign = FALSE} the absolute value of the coefficients corresponding the tuned model are used otherwise, the estimated coefficients are used.
+#'
+#' @param object fitted \code{\link[glmnetsurv]{glmnetsurv}} object.
+#' @param show_sign if \code{FALSE}, the absolute value of coefficients are used. If \code{TRUE} estimated model estimated coefficients are used.
+#' @param scale if \code{TRUE} the scores are divided by the absolute sum of the coefficients.
+#' @param ... not implemented. 
+#'
+#' @seealso
+#' \code{\link[glmnetsurv]{plot.varImp}}
+#'
+#' @examples
+#'
+#' data(veteran, package="survival")
+#' # glmnet
+#' gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = 0.02
+#'		, alpha = 0.8
+#'	)
+#' imp1 <- varImp(gfit1)
+#' print(imp1)
+#' imp2 <- varImp(gfit1, show_sign = TRUE, scale = TRUE)
+#' print(imp2)
+#'
+#' @rdname varImp.glmnetsurv
+#' @export
+
+varImp.glmnetsurv <- function(object, show_sign = FALSE
+	, scale = FALSE, ...){
+	s <- object$s
+	beta <- predict(object$fit, s = s, type = "coef")
+	if(is.list(beta)) {
+		out <- do.call("cbind", lapply(beta, function(x) x[,1]))
+		out <- as.data.frame(out)
+	} else out <- data.frame(Overall = beta[,1])
+	out <- out[rownames(out) != "(Intercept)",,drop = FALSE]
+	if (!show_sign) out <- abs(out)
+	if (scale){
+		out$Overall <- out$Overall/sum(abs(out$Overall), na.rm = TRUE)
+	}
+	out <- list(imp = out)
+	class(out) <- "varImp"
+	return(out)
+}

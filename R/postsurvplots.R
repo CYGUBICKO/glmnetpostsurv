@@ -343,3 +343,47 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 	return(p1)
 }
 
+#' Generic method for plotting variable importance of various models
+#'
+#' @param x a \code{\link[glmnetsurv]{glmnetsurv}} object. 
+#' @param ... for future implementations
+#'
+#' @seealso
+#' \code{\link[glmnetsurv]{varImp.glmnetsurv}}
+#'
+#' @examples
+#'
+#' data(veteran, package="survival")
+#' # glmnet
+#' gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = 0.02
+#'		, alpha = 0.8
+#'	)
+#' imp1 <- varImp(gfit1)
+#' plot(imp1)
+#' imp2 <- varImp(gfit1, show_sign = TRUE, scale = TRUE)
+#' plot(imp2)
+#'
+#' @export
+
+plot.varImp <- function(x, ...){
+	x <- x$imp
+	x$terms <- rownames(x)
+	Overall <- NULL
+	p1 <- (ggplot(x, aes(x = reorder(terms, Overall), y = Overall, group = 1))
+		+ geom_point(colour = "blue")
+		+ geom_segment(aes(x = terms, xend = terms
+				, y = 0, yend = Overall
+			)
+			, colour = "grey"
+		)
+		+ geom_hline(yintercept = 0, lty = 2, size = 0.2) 
+		+ scale_fill_manual(values = "blue")
+		+ guides(colour = FALSE)
+		+ labs(x = "", y = "Importance")
+		+ coord_flip()
+	)
+	return(p1)
+}
+
