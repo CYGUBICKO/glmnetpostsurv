@@ -1,12 +1,11 @@
 Package: glmnetsurv
 Type: Package
-Title: What the Package Does in One 'Title Case' Line
+Title: Fit survival models with 'glmnet'
 Version: 1.0
 Date: 2020-11-04
-Author: Your Name
-Maintainer: Your Name <your@email.com>
-Description: One paragraph description of what the package does as one
-        or more full sentences.
+Author: Bicko Cygu
+Maintainer: Bicko Cygu <cygubicko@gmail.com>
+Description: A wrapper for survival modelling with glmnet package. It provides user friendly formula interface compatible with survival package. It also provides post fitting methods for survival models. 
 License: GPL (>= 2)
 Depends: R (>= 3.5.0), glmnet
 Imports: survival, riskRegression, prodlim, ggplot2

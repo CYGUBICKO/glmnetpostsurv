@@ -90,6 +90,6 @@ glmnetsurvfit <- function(fit, newdata, ...) UseMethod("glmnetsurvfit")
 #' @export
 glmnetbasehaz <- function(fit, centered = TRUE) UseMethod("glmnetbasehaz")
 
-#' @export 
-varImp <- function(object, show_sign = FALSE, scale = FALSE, ...) UseMethod("varImp")
+
+
 

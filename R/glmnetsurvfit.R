@@ -173,7 +173,7 @@ predictSurvProb.glmnetsurv <- function(object, newdata, times, ...){
 	S <- t(sfit$surv)
 	Time <- sfit$time
 	if(N == 1) S <- matrix(S, nrow = 1)
-	p <- S[, prodlim::sindex(Time, times), drop = FALSE]
+	p <-  cbind(1, S)[, 1 + prodlim::sindex(Time, times),drop = FALSE]
 	p
 }
 
@@ -227,3 +227,144 @@ predictRisk.glmnetsurv <- function(object, newdata, times, ...){
 	p
 }
 
+#' Predict risk for glmnet object
+#'
+#' Formats newX so that it takes in newdata in the format of the original data. The user's don't have to worry about restructuring the new data.
+#' 
+#' @param object fitted \code{\link[glmnetsurv]{glmnetsurv}}.
+#' @param newdata a matrix containing the variables appearing in model \code{\link[glmnetsurv]{glmnetsurv}} formula.
+#'
+#' @keywords internal
+#' 
+newrisk <- function(model, newdata){
+	new_form <- delete.response(model$terms)
+	m <- model.frame(new_form, data = newdata, xlev = model$xlevels
+		, na.action = model$na.action, drop.unused.levels = TRUE
+	)
+	m <- model.matrix(new_form, m, contr = model$contrasts, xlev = model$xlevels)[,-1,drop = FALSE]
+	pred_risk <- as.vector(predict(model$fit, newx = m, s = model$s))
+	pred_risk
+}
+
+#' Compute the concordance statistic for the pcoxtime model
+#'
+#' The function computes the agreement between the observed response and the predictor.
+#'
+#' @aliases concordScore
+#'
+#' @details
+#' Computes Harrel's C index for predictions for \code{\link[glmnetsurv]{glmnetsurv}}, \code{\link[pcoxtime]{pcoxtime}}, \code{\link[survival]{coxph}}, etc, object and takes into account censoring. See \code{\link[survival]{survConcordance}}.
+#'
+#' @param fit fitted \code{\link[glmnetsurv]{glmnetsurv}}, \code{\link[pcoxtime]{pcoxtime}}, \code{\link[survival]{coxph}}, etc.
+#' @param newdata optional data frame containing the variables appearing on the right hand side of \code{\link[glmnetsurv]{glmnetsurv}} formula.
+#' @param stats logical. If \code{TRUE} all the related concordance statistics are returned.
+#'
+#' @return an object containing the concordance, followed by the number of pairs that agree, disagree, are tied, and are not comparable.
+#'
+#' @examples
+#'
+#' data(veteran, package="survival")
+#' # Penalized
+#' lam <- 0.1
+#' alp <- 0.5
+#' pfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = lam
+#'		, alpha = alp
+#'	)
+#' c1 <- concordScore(pfit1)
+#' c1
+#'
+#' # Unpenalized
+#' lam <- 0
+#' alp <- 1
+#' pfit2 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = lam
+#'		, alpha = alp
+#'	)
+#' c2 <- concordScore(pfit2)
+#' c2
+#'
+#' @export
+
+concordScore <- function(fit, newdata = NULL, stats = FALSE){
+	if (is.null(newdata)){
+		if (inherits(fit, "glmnetsurv")){
+			risk <- predict(fit$fit, newx = fit$X, s = fit$s)
+		} else {
+			risk <- predict(fit, type = "risk")
+		}
+		if (inherits(fit, "pcoxtime")){
+			Y <- fit$Y
+		} else {
+			Y <- fit$y
+		}
+	} else {
+		if (inherits(fit, "glmnetsurv")){
+			risk <- newrisk(fit, newdata)
+		} else {
+			risk <- predict(fit, newdata = newdata, type = "risk")
+		}
+		Y <- model.extract(model.frame(fit$terms, data = newdata), "response")
+	}
+	
+	conindex <- survival::survConcordance(Y ~ risk)
+	if (!stats){
+		conindex <- conindex$concordance
+	}
+	return(conindex)
+}
+
+#' Permutation variable importance
+#'
+#' Computes the relative importance based on random permutation of focal variable for various survival models.
+#'
+#' @details 
+#' Given predictors \code{x_1, x_2, ..., x_n} used to predict the survival outcome, \code{y}. Suppose, for example, \code{x_1} has low predictive power for the response. Then, if we randomly permute the observed values for \code{x_1}, then the prediction for \code{y} will not change much. Conversely, if any of the predictors highly predicts the response, the permutation of that specific predictor will lead to a considerable change in the predictive measure of the model. In this case, we conclude that this predictor is important. In our implementation, Harrel's concordance index is used to measure the prediction accuracy.
+#' @param model fitted \code{\link[glmnetsurv]{glmnetsurv}}, \code{\link[pcoxtime]{pcoxtime}}, \code{\link[survival]{coxph}}, etc.
+#' @param newdata optional data frame containing the variables appearing on the right hand side of \code{\link[glmnetsurv]{glmnetsurv}} formula.
+#' @param nrep number of replicates for permulations
+#'
+#' @return a named vector of variable scores
+#'
+#' @examples
+#'
+#' data(veteran, package="survival")
+#' # Penalized
+#' lam <- 0.1
+#' alp <- 0.5
+#' pfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + prior
+#'		, data = veteran
+#'		, lambda = lam
+#'		, alpha = alp
+#'	)
+#' imp <- permuteImp(pfit1, veteran, 10)
+#' imp
+#'
+#' @export
+
+permuteImp <- function(model, newdata, nrep = 50){
+	# Overall score
+	overall_c <- concordScore(model)
+	Terms <- terms(model)
+	yvars <- formula(Terms)[[2]]
+	y <- with(newdata, eval(yvars))
+	xvars <- all.vars(formula(delete.response(Terms)))
+	N <- NROW(newdata)
+	vi <- sapply(xvars, function(x){
+		permute_df <- newdata[rep(seq(N), nrep), xvars, drop = FALSE]
+		permute_var <- as.vector(replicate(nrep, sample(newdata[,x], N, replace = FALSE)))
+		index <- rep(1:nrep, each = N)
+		permute_df[, x] <- permute_var
+		if (inherits(model, "glmnetsurv")){
+			risk <- newrisk(model, permute_df)
+		} else {
+			risk <- predict(model, newdata = permute_df, type = "risk")
+		}
+		perm_c <- tapply(risk, index, function(r){
+			survConcordance(y~r)$concordance
+		})
+		mean((overall_c - perm_c)/overall_c)
+	})
+}

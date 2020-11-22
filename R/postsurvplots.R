@@ -346,10 +346,12 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 #' Generic method for plotting variable importance of various models
 #'
 #' @param x a \code{\link[glmnetsurv]{glmnetsurv}} object. 
+#' @param drop_zero if \code{TRUE} only nonzero estimates are shown.
+#' @param label_size the size of text labels 
 #' @param ... for future implementations
 #'
 #' @seealso
-#' \code{\link[glmnetsurv]{varImp.glmnetsurv}}
+#' \code{\link[glmnetsurv]{varImp}}
 #'
 #' @examples
 #'
@@ -360,30 +362,51 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 #'		, lambda = 0.02
 #'		, alpha = 0.8
 #'	)
-#' imp1 <- varImp(gfit1)
-#' plot(imp1)
-#' imp2 <- varImp(gfit1, show_sign = TRUE, scale = TRUE)
-#' plot(imp2)
+#' imp1 <- varImp(gfit1, type = "param")
+#' plotImp(imp1)
+#' imp2 <- varImp(gfit1, type = "variable", newdata = veteran)
+#' plotImp(imp2)
 #'
 #' @export
 
-plot.varImp <- function(x, ...){
-	x <- x$imp
+plotImp <- function(x, drop_zero = FALSE, label_size = 3, ...){
 	x$terms <- rownames(x)
+	oldsign <- any(x$sign<0)
+	x$sign <- ifelse(x$sign==1, "+", ifelse(x$sign==-1, "-", "0"))
+	x <- x[order(x$Overall), ]
+	if (drop_zero){
+		x <- x[x$Overall!=0, ]
+	}
 	Overall <- NULL
-	p1 <- (ggplot(x, aes(x = reorder(terms, Overall), y = Overall, group = 1))
-		+ geom_point(colour = "blue")
+	p1 <- (ggplot(x, aes(x = reorder(terms, Overall), y = Overall, group = 1, colour = sign))
+		+ geom_point()
 		+ geom_segment(aes(x = terms, xend = terms
 				, y = 0, yend = Overall
+				, colour = sign
 			)
-			, colour = "grey"
 		)
-		+ geom_hline(yintercept = 0, lty = 2, size = 0.2) 
-		+ scale_fill_manual(values = "blue")
-		+ guides(colour = FALSE)
+		+ geom_text(aes(y = 0, label = paste0(terms, "  "))
+			, size = label_size
+			, vjust = 0.2
+			, hjust = 1
+			, show.legend = FALSE
+		)
+		+ scale_colour_manual(values = c("+" = "black", "-" = "red", "0" = "grey")
+			, limits = c("+", "0", "-")
+		)
+		+ guides(fill = FALSE)
 		+ labs(x = "", y = "Importance")
-		+ coord_flip()
+		+ coord_flip(clip = "off", expand = TRUE)
+		+ theme_minimal()
+		+ theme(plot.title = element_text(hjust = 0.5, face = "bold", colour = "grey")
+			, axis.ticks.y = element_blank()
+			, axis.text.y = element_blank()
+			, panel.grid.major.y = element_blank()
+		)
 	)
+	if (!oldsign) {
+		p1 <- p1 + guides(colour = FALSE)
+	}
 	return(p1)
 }
 

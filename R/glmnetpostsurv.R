@@ -34,7 +34,7 @@
 #' \item{s}{lambda used}
 #'
 #' @export
-#' @importFrom stats .getXlevels aggregate approx as.formula coef coefficients delete.response model.extract model.frame model.matrix na.omit na.pass predict setNames terms reorder
+#' @importFrom stats .getXlevels aggregate approx as.formula coef coefficients delete.response model.extract model.frame model.matrix na.omit na.pass predict setNames terms reorder formula
 #' @docType package
 #' @name glmnetsurv
 #' @import glmnet
@@ -304,20 +304,22 @@ glmnetsurvdata <- function(formula = formula(data), data = sys.parent()
 }
 
 
-#' Compute variable importance of glmnetsurv object
+#' Compute variable importance of various survival models object
 #'
 #' @aliases varImp
 #'
 #' @details
-#' If \code{show_sign = FALSE} the absolute value of the coefficients corresponding the tuned model are used otherwise, the estimated coefficients are used.
+#' Absolute value of the coefficients (parameters) corresponding the tuned model are used \code{type = param}. Otherwise, variable level importance is computed using permutation. See  \code{\link[glmnetsurv]{permuteImp}}.
 #'
-#' @param object fitted \code{\link[glmnetsurv]{glmnetsurv}} object.
-#' @param show_sign if \code{FALSE}, the absolute value of coefficients are used. If \code{TRUE} estimated model estimated coefficients are used.
+#' @param object fitted \code{\link[glmnetsurv]{glmnetsurv}}, \code{\link[pcoxtime]{pcoxtime}}, \code{\link[survival]{coxph}}, etc, object.
+#' @param type if \code{type = "param"} absolute value of estimated coefficients are used. If \code{type = "variable"} variable level importance is computed using permutation.
 #' @param scale if \code{TRUE} the scores are divided by the absolute sum of the coefficients.
+#' @param newdata optional data frame containing the variables appearing on the right hand side of \code{\link[glmnetsurv]{glmnetsurv}} formula. Required if \code{type = "variable"}
+#' @param nrep number of replicates for permulations. Only if \code{type = "variable"}.
 #' @param ... not implemented. 
 #'
 #' @seealso
-#' \code{\link[glmnetsurv]{plot.varImp}}
+#' \code{\link[glmnetsurv]{plotImp}}
 #'
 #' @examples
 #'
@@ -328,28 +330,35 @@ glmnetsurvdata <- function(formula = formula(data), data = sys.parent()
 #'		, lambda = 0.02
 #'		, alpha = 0.8
 #'	)
-#' imp1 <- varImp(gfit1)
+#' imp1 <- varImp(gfit1, type = "param")
 #' print(imp1)
-#' imp2 <- varImp(gfit1, show_sign = TRUE, scale = TRUE)
+#' imp2 <- varImp(gfit1, type = "variable", newdata = veteran)
 #' print(imp2)
 #'
-#' @rdname varImp.glmnetsurv
 #' @export
 
-varImp.glmnetsurv <- function(object, show_sign = FALSE
-	, scale = FALSE, ...){
-	s <- object$s
-	beta <- predict(object$fit, s = s, type = "coef")
-	if(is.list(beta)) {
-		out <- do.call("cbind", lapply(beta, function(x) x[,1]))
-		out <- as.data.frame(out)
-	} else out <- data.frame(Overall = beta[,1])
-	out <- out[rownames(out) != "(Intercept)",,drop = FALSE]
-	if (!show_sign) out <- abs(out)
-	if (scale){
-		out$Overall <- out$Overall/sum(abs(out$Overall), na.rm = TRUE)
+varImp <- function(object, type = c("param", "variable"), scale = TRUE, newdata, nrep = 20, ...){
+	type <- match.arg(type)
+	if (type=="param"){
+		if (inherits(object, "glmnetsurv")){
+			s <- object$s
+			beta <- predict(object$fit, s = s, type = "coef")
+			if(is.list(beta)) {
+				out <- do.call("cbind", lapply(beta, function(x) x[,1]))
+				out <- as.data.frame(out)
+			} else out <- data.frame(Overall = beta[,1])	
+		} else {
+			beta <- coef(object)
+			out <- data.frame(Overall = beta)
+		}
+		out <- out[rownames(out) != "(Intercept)",,drop = FALSE]
+	} else {
+		out <- data.frame(Overall = permuteImp(object, newdata, nrep))
 	}
-	out <- list(imp = out)
-	class(out) <- "varImp"
+	out$sign <- sign(out$Overall)
+	out$Overall <- abs(out$Overall)
+	if (scale){
+		out$Overall <- out$Overall/sum(out$Overall, na.rm = TRUE)
+	}
 	return(out)
 }
