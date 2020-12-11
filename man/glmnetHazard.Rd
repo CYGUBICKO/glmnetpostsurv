@@ -4,7 +4,14 @@
 \alias{glmnetHazard}
 \title{Compute predicted hazard for glmnet}
 \usage{
-glmnetHazard(object)
+glmnetHazard(
+  y,
+  x = NULL,
+  wt = rep(1, NROW(y)),
+  risk = NULL,
+  survtype = NULL,
+  vartype = NULL
+)
 }
 \arguments{
 \item{object}{fitted \code{\link[glmnetsurv]{glmnetsurv}} object.}

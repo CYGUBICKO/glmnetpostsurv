@@ -7,14 +7,16 @@
 \alias{glmnetbasehaz}
 \title{Compute survival curve and cumulative hazard from a glmnet model through glmnetsurv}
 \usage{
-\method{glmnetsurvfit}{glmnetsurv}(fit, newdata, ...)
+\method{glmnetsurvfit}{glmnetsurv}(fit, newdata, survfit = FALSE, ...)
 
-\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE)
+\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE, survfit = FALSE)
 }
 \arguments{
 \item{fit}{fitted \code{\link[glmnetsurv]{glmnetsurv}} object}
 
 \item{newdata}{a matrix containing the variables appearing on the right hand side of the model formula of \code{\link[glmnetsurv]{glmnetsurv}} model.}
+
+\item{survfit}{logical value. If \code{TRUE}, survival function estimation is similar to that of \code{\link[survival]{survfit}}, otherwise \code{\link[glmnetsurv]{breslow}} is used.}
 
 \item{...}{for future implementations}
 
@@ -30,7 +32,6 @@
 \item{n.censor}{the number of subjects who exit the risk set, without an event, at time \code{t}.}
 \item{surv}{a vector or a matrix of estimated survival function.}
 \item{cumhaz, hazard}{a vector or a matrix of estimated cumulative hazard.}
-\item{xmeans}{column means for X.}
 \item{s}{lambda value.}
 \item{call}{the call that produced the object.}
 }

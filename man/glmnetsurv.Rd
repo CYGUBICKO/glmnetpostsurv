@@ -12,6 +12,8 @@ glmnetsurv(
   alpha = 1,
   lambda = NULL,
   s = NULL,
+  method = "breslow",
+  x = FALSE,
   contrasts.arg = NULL,
   xlevs = NULL,
   na.action = na.omit,
@@ -33,6 +35,10 @@ variables specified in the formula.}
 \item{lambda}{optional user supplied lambda sequence, see \code{\link[glmnet]{glmnet}}. It is recommended that you supply a sequence of \code{lambdas.optimal} from \code{\link[glmnetsurv]{glmnetsurvcv}} object.}
 
 \item{s}{a single value of lambda over which predictions or extractions are made. Ideally, this value should be obtained from  \code{\link[glmnetsurv]{glmnetsurvcv}} if not known. This can be \code{NULL} (or not specified) if a single value of \code{lambda} is specified, otherwise required if \code{lambda = NULL} or if \code{lambda} is a vector.}
+
+\item{method}{for ties handling. Currently, only "breslow" is implemented.}
+
+\item{x}{logical value. If \code{TRUE}, the x matrix is returned in component otherwise \code{NULL}.}
 
 \item{contrasts.arg}{an optional list. See 
 the contrasts.arg of

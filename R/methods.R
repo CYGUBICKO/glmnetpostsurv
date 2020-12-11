@@ -85,11 +85,13 @@ print.glmnetsurvfit <- function(x, ...){
 }
 
 #' @export
-glmnetsurvfit <- function(fit, newdata, ...) UseMethod("glmnetsurvfit")
+glmnetsurvfit <- function(fit, newdata, survfit = FALSE, ...) UseMethod("glmnetsurvfit")
 
 #' @export
-glmnetbasehaz <- function(fit, centered = TRUE) UseMethod("glmnetbasehaz")
+glmnetbasehaz <- function(fit, centered = TRUE, survfit = FALSE) UseMethod("glmnetbasehaz")
 
+#' @export
+breslow <- function(fit, centered = FALSE) UseMethod("breslow")
 
 
 

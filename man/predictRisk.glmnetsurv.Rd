@@ -5,7 +5,7 @@
 \alias{predictRisk}
 \title{Extract predictions from glmnet model}
 \usage{
-predictRisk.glmnetsurv(object, newdata, times, ...)
+\method{predictRisk}{glmnetsurv}(object, newdata, times, ...)
 }
 \arguments{
 \item{object}{fitted \code{\link[glmnetsurv]{glmnetsurv}}.}
@@ -36,7 +36,7 @@ gfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, alpha = alp
 	, lambda = lam
 )
-r1 <- predictRisk.glmnetsurv(gfit1, newdata = veteran[1:80,], times = 10)
+r1 <- predictRisk(gfit1, newdata = veteran[1:80,], times = 10)
 
 # Unpenalized model
 lam2 <- 0
@@ -46,7 +46,7 @@ gfit2 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, alpha = alp2
 	, lambda = lam2
 )
-r2 <- predictRisk.glmnetsurv(gfit2, newdata = veteran[1:80,], times = 10)
+r2 <- predictRisk(gfit2, newdata = veteran[1:80,], times = 10)
 plot(r1, r2, xlim=c(0,1), ylim=c(0,1)
 	, xlab = "Penalized predicted survival chance at 10"
 	, ylab="Unpenalized predicted survival chance at 10"

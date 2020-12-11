@@ -33,7 +33,7 @@ pfit1 <- glmnetsurv(Surv(time, status) ~ factor(trt) + karno + diagtime + age + 
 	, lambda = lam
 	, alpha = alp
 )
-imp <- permuteImp(pfit1, veteran, 10)
+imp <- permuteImp(pfit1, newdata = veteran, nrep = 50)
 imp
 
 }

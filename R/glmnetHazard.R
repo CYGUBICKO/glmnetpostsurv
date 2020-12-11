@@ -14,40 +14,90 @@
 #' \item{chaz, hazard}{a vector or a matrix of estimated cumulative hazard.}
 #' @keywords internal
 
-glmnetHazard <- function(object){
-	Y <- object$y
-	X <- object$X
-	wt <- rep(1, NROW(Y))
-	s <- object$s
-	fit <- object$fit
-	beta.hat <- drop(predict(fit, type = "coefficients", s = s))
-	xmeans <- apply(X, 2, mean)
-	X.centered <- X - rep(xmeans, each = NROW(X))
-	oldlp <- as.vector(X.centered %*% beta.hat)
-	oldrisk <- exp(oldlp)
-	status <- Y[, ncol(Y)]
-	dtime <- Y[, ncol(Y) - 1]
+glmnetHazard <- function(y, x = NULL, wt = rep(1, NROW(y)), risk=NULL, survtype=NULL, vartype=NULL){
+	status <- y[, ncol(y)]
+	dtime <- y[, ncol(y) - 1]
 	death <- (status == 1)
 	time <- sort(unique(dtime))
 	nevent <- as.vector(rowsum(wt * death, dtime))
 	ncens <- as.vector(rowsum(wt * (!death), dtime))
-	wrisk <- wt * oldrisk
+	wrisk <- wt * risk
 	rcumsum <- function(x) rev(cumsum(rev(x)))
 	nrisk <- rcumsum(rowsum(wrisk, dtime))
 	irisk <- rcumsum(rowsum(wt, dtime))
-	if (NCOL(Y) != 2){
+	if (NCOL(y) != 2){
 		delta <- min(diff(time))/2
-		etime <- c(sort(unique(Y[, 1])), max(Y[, 1]) + delta)
+		etime <- c(sort(unique(y[, 1])), max(y[, 1]) + delta)
 		indx <- approx(etime, 1:length(etime), time, method = "constant", rule = 2, f = 1)$y
-		esum <- rcumsum(rowsum(wrisk, Y[, 1]))
+		esum <- rcumsum(rowsum(wrisk, y[, 1]))
 		nrisk <- nrisk - c(esum, 0)[indx]
-		irisk <- irisk - c(rcumsum(rowsum(wt, Y[, 1])), 0)[indx]
+		irisk <- irisk - c(rcumsum(rowsum(wt, y[, 1])), 0)[indx]
 	}
 	haz <- nevent/nrisk
-	result <- list(n = NROW(Y), time = time, n.event = nevent
+	result <- list(n = NROW(y), time = time, n.event = nevent
 		, n.risk = irisk, n.censor = ncens, hazard = haz
 		, chaz = cumsum(haz)
 	)
 	return(result)
 }
+
+
+#' Breslow estimator for the individuals at risk
+#' 
+#' Computes the number of indiduals ar risk given the linear predictor
+#'
+#' @param y \code{\link[survival]{Surv}} object.
+#' @param lp a vector of linear predictor. Computed from the \code{X} matrix (predictors) and the estimated coefficients (\code{beta}).
+#' @return A list of S3 objects. 
+#' \item{n}{number of observations used in the fit.}
+#' \item{time}{time points defined by the risk set.}
+#' \item{n.event}{the number of events that occur at time \code{t}.}
+#' \item{n.risk}{the number of individuals at risk at time \code{t}.}
+#' \item{n.censor}{the number of subjects who exit the risk set, without an event, at time \code{t}.}
+#'
+#' @keywords internal
+robustHazard <- function(y, lp) {
+
+	## Number of observations
+	N <- NROW(y)
+	## Single or double time time vars as per Surv
+	p <- NCOL(y)
+
+	## Relative hazard
+	relhaz <- exp(lp)
+	
+	## Initialize risk score for each patient
+	risk <- numeric(N)
+
+	## Individuals at risk
+	n.risk <- numeric(N)
+
+	if (p == 2) {
+		endtime <- y[,1]
+		events <- y[,2]
+		for (i in 1:N){
+			cond <- endtime[i] >= endtime
+			indicator <- ifelse(cond, 1, 0)
+			risk <- risk + (indicator * relhaz[[i]])
+			n.risk <- n.risk + indicator
+		}
+	} else {
+		starttime <- y[,1]
+		endtime <- y[,2]
+		events <- y[,3]
+		for (i in 1:N){
+			cond <- (endtime[i] >= endtime) & (starttime[i] < endtime)
+			indicator <- ifelse(cond, 1, 0)
+			risk <- risk + (indicator * relhaz[[i]])
+			n.risk <- n.risk + indicator
+		}
+	}
+	death <- (events == 1)
+	nevent <- as.vector(rowsum(1*death, endtime))
+	ncens <- as.vector(rowsum(1*!death, endtime))
+	n.risk <- sort(unique(drop(n.risk)), decreasing = TRUE)
+	return(list(n = N, time = endtime, risk = risk, n.risk = n.risk, n.event = nevent, n.censor = ncens, events = events))
+}
+
+
 

@@ -13,6 +13,8 @@
 #' @param alpha the elasticnet mixing parameter, see \code{\link[glmnet]{glmnet}}.
 #' @param lambda optional user supplied lambda sequence, see \code{\link[glmnet]{glmnet}}. It is recommended that you supply a sequence of \code{lambdas.optimal} from \code{\link[glmnetsurv]{glmnetsurvcv}} object.
 #'	@param s a single value of lambda over which predictions or extractions are made. Ideally, this value should be obtained from  \code{\link[glmnetsurv]{glmnetsurvcv}} if not known. This can be \code{NULL} (or not specified) if a single value of \code{lambda} is specified, otherwise required if \code{lambda = NULL} or if \code{lambda} is a vector.
+#' @param method for ties handling. Currently, only "breslow" is implemented.
+#' @param x logical value. If \code{TRUE}, the x matrix is returned in component otherwise \code{NULL}.
 #' @param contrasts.arg an optional list. See 
 #' the contrasts.arg of
 #' \code{[stats]{model.matrix.default}}.
@@ -62,12 +64,14 @@
 
 glmnetsurv <- function(formula = formula(data), data = sys.parent()
 	, family = "cox", alpha = 1, lambda = NULL, s = NULL
-	, contrasts.arg = NULL, xlevs = NULL, na.action = na.omit, ...){
+	, method = "breslow", x = FALSE, contrasts.arg = NULL
+	, xlevs = NULL, na.action = na.omit, ...){
 	if(family != "cox")stop("Only cox family allowed currently!")
 	if ((is.null(lambda)|length(lambda)>1) & is.null(s))stop("s is required for predictions.")
 	if (any(s<0) | length(s)>1)stop("s is a non-negative single value.")
 	
 	if (is.null(s))s <- lambda
+	method <- match.arg(method)
 	sobj <- glmnetsurvdata(formula, data, contrasts.arg, xlevs, na.action)
 	X <- sobj$X
 	y <- sobj$y
@@ -75,19 +79,37 @@ glmnetsurv <- function(formula = formula(data), data = sys.parent()
 	na.action <- sobj$na.action
 	xlevels <- sobj$xlevels
 	Terms2 <- sobj$terms
+	assign <- sobj$assign
+	events <- sobj$events
+	times <- sobj$times
+	n <- NROW(y)
+	means <- apply(X, 2, mean)
+
 	glmnet_args <- list(x = X, y = y, family = family, alpha = alpha, lambda = lambda)
 	new_args <- list(...)
 	
 	if (length(new_args))glmnet_args[names(new_args)] <- new_args
 	fit <- do.call("glmnet", glmnet_args)
 	
+	beta_hat <- drop(coefficients(fit, s = s))
+	X.centered <- X - rep(means, each = NROW(X))
+	lp <- as.vector(drop(X.centered %*% beta_hat))
+
+	death <- (events == 1)
+	nevent <- as.vector(rowsum(1*death, times))
+	
 	fit$call <- match.call()
-	result <- list(fit = fit, X = X, y = y, s = s
-		, contrasts = contrasts, na.action = na.action
-		, xlevels = xlevels, terms = Terms2
+	result <- list(fit = fit, y = y, s = s, coefficients = beta_hat
+		, linear.predictors = lp, means = means, method = method
+		, contrasts = contrasts, na.action = na.action, n = n
+		, nevent = nevent, formula = formula, xlevels = xlevels
+		, terms = Terms2, assign = assign, x = NULL
 	)
+	if (x) {
+		result$x <- X
+	}
 	result$call <- match.call()
-	class(result) <- "glmnetsurv"
+	class(result) <- c("glmnetsurv", "coxph")
   	return(result)
 }
 
@@ -288,17 +310,34 @@ glmnetsurvdata <- function(formula = formula(data), data = sys.parent()
 	m <- eval(m, sys.parent())
 	Terms2 <- terms(m)
 	y <- model.extract(m, "response")
+	p <- NCOL(y)
 	term.labels <- attr(Terms, "term.labels")
 	xlevels <- .getXlevels(Terms, m)
 	
 	if(!inherits(y, "Surv")) stop("formula: must be a survival formula. ?survival")
+	ynames <- deparse(formula[[2]])
 	X <- model.matrix(Terms, m, contr = contrasts.arg, xlev = xlevs)
 	contrasts <- attr(X, "contrasts")
 	xnames <- colnames(X)
 	assign <- setNames(attr(X, "assign"), xnames)[-1]
 	X <- X[,-1, drop = FALSE]
-	result <- list(X = X, y = y, contrasts = contrasts
-		, na.action = na.action, xlevels = xlevels, terms = Terms2
+	
+	eventvarlabel <- trimws(gsub(".*\\,|\\)", "", ynames))
+	# eventvarlabel <- ynames[length(ynames)]
+	if (p == 2) {
+		timevarlabel <- gsub(".*\\(|\\,.*", "", ynames)
+		endtime <- y[,1]
+		events <- y[,2]
+	} else {
+		starttime <- y[,1]
+		endtime <- y[,2]
+		events <- y[,3]
+		timevarlabel <- trimws(strsplit(ynames, "\\,", perl = TRUE)[[1]][2])
+	}
+	
+	result <- list(X = X, y = y, events = events, times = endtime
+		, contrasts = contrasts, na.action = na.action, assign = assign
+		, term.labels = term.labels, xlevels = xlevels, terms = Terms2
 	)
   	return(result)
 }
