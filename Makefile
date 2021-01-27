@@ -67,6 +67,7 @@ makestuff/Makefile:
 -include makestuff/git.mk
 -include makestuff/visual.mk
 -include makestuff/projdir.mk
--include makestuff/makeR.mk
+-include makestuff/wrapR.mk
+#-include makestuff/makeR.mk
 -include makestuff/pandoc.mk
 

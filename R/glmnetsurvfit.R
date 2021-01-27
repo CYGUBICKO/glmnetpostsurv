@@ -54,7 +54,7 @@
 
 glmnetsurvfit.glmnetsurv <- function(fit, newdata, survfit = FALSE, ...) {
 	
-	if (survfit){
+	if (!survfit){
 		afit <- breslow(fit, centered = TRUE)	
 		chaz <- afit$cumhaz
 		surv.est <- afit$surv
@@ -70,8 +70,9 @@ glmnetsurvfit.glmnetsurv <- function(fit, newdata, survfit = FALSE, ...) {
 		}
 	} else{
 		y <- fit$y
-		x <- fit$x
-		risk <- exp(fit$linear.predictors)
+		x <- model.matrix(fit)
+		risk <- predict(fit, type="risk")
+	#	risk <- exp(fit$linear.predictors)
 		afit <- glmnetHazard(y = y, x = x, risk = risk)
 		chaz <- afit$chaz
 		surv.est <- exp(-chaz)
@@ -106,9 +107,9 @@ glmnetsurvfit.glmnetsurv <- function(fit, newdata, survfit = FALSE, ...) {
 #' @export
 #'
 
-glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE, survfit = FALSE){
+glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE, survfit = FALSE, truezero=FALSE){
 	
-	if (survfit) {
+	if (!survfit) {
 		sfit <- breslow(fit, centered = TRUE)
 		chaz <- sfit$cumhaz
 		surv.est <- sfit$surv
@@ -128,6 +129,15 @@ glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE, survfit = FALSE){
 			offset <- as.vector(X.mean %*% beta.hat)
 			chaz <- chaz * exp(-offset)
 			surv.est <- exp(-chaz)
+			if (truezero) {
+				y <- fit$y
+				x <- model.matrix(fit)
+				risk <- 1 # All covariate values are zero => lp = 0
+			#	risk <- exp(fit$linear.predictors)
+				afit <- glmnetHazard(y = y, x = x, risk = risk)
+				chaz <- afit$chaz
+				surv.est <- exp(-chaz)
+			}
 		}
 	}
 	out <- list(time = sfit$time, hazard = chaz, surv = surv.est)
@@ -291,7 +301,8 @@ predict.glmnetsurv <- function(object, ..., newdata = NULL
 		xmeans <- xmeans[xnames]
 		beta.hat <- beta.hat[xnames]
 		newX.centered <- newX - rep(xmeans, each = NROW(newX))
-		lp <- object$linear.predictors
+		lp <- as.vector(drop(newX.centered %*% beta.hat))
+	#	lp <- object$linear.predictors
 	} else {
 		x_form <- delete.response(new_form)
 		m <- model.frame(x_form, data = newdata, xlev = object$xlevels

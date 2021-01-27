@@ -9,7 +9,7 @@
 \usage{
 \method{glmnetsurvfit}{glmnetsurv}(fit, newdata, survfit = FALSE, ...)
 
-\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE, survfit = FALSE)
+\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE, survfit = FALSE, truezero = FALSE)
 }
 \arguments{
 \item{fit}{fitted \code{\link[glmnetsurv]{glmnetsurv}} object}

@@ -76,14 +76,14 @@ plot.glmnetsurvfit <- function(x, ..., type = c("surv", "cumhaz"), lsize = 0.3, 
 	)
 
 	if (type == "surv"){
-		p1 <- p0 + geom_line(aes(y = surv), size = lsize) + labs(y = "Survival prob.")
+		p1 <- p0 + geom_step(aes(y = surv), size = lsize) + labs(y = "Survival prob.")
 		if (compare){
-			p1 <- p0 + geom_line(aes(y = surv, col = "glmnet"), size = lsize) + labs(y = "Survival prob.")
+			p1 <- p0 + geom_step(aes(y = surv, col = "glmnet"), size = lsize) + labs(y = "Survival prob.")
 		}
 	} else {
-		p1 <- p0 + geom_line(aes(y = cumhaz), size = lsize) + labs(y = "Cummualtive hazard")
+		p1 <- p0 + geom_step(aes(y = cumhaz), size = lsize) + labs(y = "Cummualtive hazard")
 		if (compare){
-			p1 <- p0 + geom_line(aes(y = cumhaz, col = "glmnet"), size = lsize) + labs(y = "Cummualtive hazard")
+			p1 <- p0 + geom_step(aes(y = cumhaz, col = "glmnet"), size = lsize) + labs(y = "Cummualtive hazard")
 		}
 	}
 	return(p1)
