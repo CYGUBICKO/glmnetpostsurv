@@ -8,6 +8,8 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
+autopipeR = defined
+
 ######################################################################
 
 Sources += $(wildcard *.md *.R *.rmd)
@@ -31,6 +33,21 @@ methods.Rout: R/methods.R
 glmnetsurvtheme.Rout: R/glmnetsurvtheme.R
 
 pkgsExport.Rout: R/pkgsExport.R
+
+######################################################################
+
+## Time-dependent covariate with glmnet and coxph
+tdh_data.Rout: tdh_data.R
+
+## coxph
+tdh_coxph.Rout: tdh_coxph.R tdh_data.rda
+
+## glmnet
+tdh_glmnetcv.Rout: tdh_glmnetcv.R tdh_data.rda
+tdh_glmnetmod.Rout: tdh_glmnetmod.R tdh_glmnetcv.rda
+
+## Compare measures
+tdh_compare.Rout: tdh_compare.R tdh_coxph.rda tdh_glmnetmod.rda
 
 ######################################################################
 
@@ -64,10 +81,10 @@ makestuff/Makefile:
 	ls $@
 
 -include makestuff/os.mk
+
+-include makestuff/texi.mk
+-include makestuff/pipeR.mk
+
 -include makestuff/git.mk
 -include makestuff/visual.mk
--include makestuff/projdir.mk
--include makestuff/wrapR.mk
-#-include makestuff/makeR.mk
--include makestuff/pandoc.mk
 
