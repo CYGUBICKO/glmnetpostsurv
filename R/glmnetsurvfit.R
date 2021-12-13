@@ -13,7 +13,6 @@
 #'
 #' @param fit fitted \code{\link[glmnetsurv]{glmnetsurv}} object
 #' @param newdata a matrix containing the variables appearing on the right hand side of the model formula of \code{\link[glmnetsurv]{glmnetsurv}} model.
-#' @param survfit logical value. If \code{TRUE}, survival function estimation is similar to that of \code{\link[survival]{survfit}}, otherwise \code{\link[glmnetsurv]{breslow}} is used.
 #' @param ... for future implementations
 #'
 #' @return \code{glmnetsurvfit} and \code{glmnetbasehaz} return S3 objects of class \code{\link[glmnetsurv]{glmnetsurvfit.glmnetsurv}} and \code{\link[glmnetsurv]{glmnetbasehaz.glmnetsurv}}, respectively:
@@ -52,36 +51,19 @@
 #' @import glmnet
 #' @export 
 
-glmnetsurvfit.glmnetsurv <- function(fit, newdata, survfit = FALSE, ...) {
+glmnetsurvfit.glmnetsurv <- function(fit, newdata, ...) {
 	
-	if (!survfit){
-		afit <- breslow(fit, centered = TRUE)	
-		chaz <- afit$cumhaz
-		surv.est <- afit$surv
-		if (!missing(newdata)){
-			afit <- breslow(fit, centered = FALSE)	
-			chaz <- afit$cumhaz
-			surv.est <- afit$surv
-			if (!missing(newdata)) {
-				lp <- predict(fit, newdata = newdata, type = "lp")
-				surv.est <- t(sapply(surv.est, function(x) x^exp(lp)))
-				chaz <- -log(surv.est)
-			}
-		}
-	} else{
-		y <- fit$y
-		x <- model.matrix(fit)
-		risk <- predict(fit, type="risk")
-	#	risk <- exp(fit$linear.predictors)
-		afit <- glmnetHazard(y = y, x = x, risk = risk)
-		chaz <- afit$chaz
-		surv.est <- exp(-chaz)
-		if (!missing(newdata)) {
-			lp <- predict(fit, newdata = newdata, type = "lp")
-			surv.est <- t(sapply(surv.est, function(x) x^exp(lp)))
-			chaz <- -log(surv.est)
-		}
-	}
+	y <- fit$y
+	x <- model.matrix(fit)
+	risk <- predict(fit, type = "risk")
+	afit <- glmnetHazard(y = y, x = x, risk = risk)
+	chaz <- afit$chaz
+	surv.est <- exp(-chaz)
+	if (!missing(newdata)) {
+		lp <- predict(fit, newdata = newdata, type = "lp")
+		surv.est <- t(sapply(surv.est, function(x) x^exp(lp)))
+		chaz <- -log(surv.est)
+	} 
 	out <- list(n = afit$n
 		, events = sum(afit$n.event)
 		, time = afit$time
@@ -107,38 +89,18 @@ glmnetsurvfit.glmnetsurv <- function(fit, newdata, survfit = FALSE, ...) {
 #' @export
 #'
 
-glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE, survfit = FALSE, truezero=FALSE){
+glmnetbasehaz.glmnetsurv <- function(fit, centered = TRUE){
 	
-	if (!survfit) {
-		sfit <- breslow(fit, centered = TRUE)
-		chaz <- sfit$cumhaz
-		surv.est <- sfit$surv
-		if (!centered) {
-			sfit <- breslow(fit, centered = FALSE)
-			chaz <- sfit$cumhaz
-			surv.est <- sfit$surv
-		}
-	} else {
-		sfit <- glmnetsurvfit.glmnetsurv(fit = fit)
-		chaz <- sfit$cumhaz
+	sfit <- glmnetsurvfit.glmnetsurv(fit = fit)
+	chaz <- sfit$cumhaz
+	surv.est <- exp(-chaz)
+	if (!centered) {
+		beta.hat <- as.vector(fit$coefficients) 
+		## Centered estimates
+		X.mean <- fit$means
+		offset <- as.vector(X.mean %*% beta.hat)
+		chaz <- chaz * exp(-offset)
 		surv.est <- exp(-chaz)
-		if (!centered) {
-			beta.hat <- fit$coefficients 
-			## Centered estimates
-			X.mean <- fit$means
-			offset <- as.vector(X.mean %*% beta.hat)
-			chaz <- chaz * exp(-offset)
-			surv.est <- exp(-chaz)
-			if (truezero) {
-				y <- fit$y
-				x <- model.matrix(fit)
-				risk <- 1 # All covariate values are zero => lp = 0
-			#	risk <- exp(fit$linear.predictors)
-				afit <- glmnetHazard(y = y, x = x, risk = risk)
-				chaz <- afit$chaz
-				surv.est <- exp(-chaz)
-			}
-		}
 	}
 	out <- list(time = sfit$time, hazard = chaz, surv = surv.est)
 	class(out) <- c("glmnetsurvfit", "glmnetbasehaz")
@@ -302,7 +264,7 @@ predict.glmnetsurv <- function(object, ..., newdata = NULL
 		beta.hat <- beta.hat[xnames]
 		newX.centered <- newX - rep(xmeans, each = NROW(newX))
 		lp <- as.vector(drop(newX.centered %*% beta.hat))
-	#	lp <- object$linear.predictors
+#		lp <- object$linear.predictors
 	} else {
 		x_form <- delete.response(new_form)
 		m <- model.frame(x_form, data = newdata, xlev = object$xlevels

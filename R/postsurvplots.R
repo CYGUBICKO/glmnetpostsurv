@@ -313,11 +313,12 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 	if (type == "roc"){
 		df <- x$ROC$plotframe
 		FPR <- TPR <- model <- AUC <- lower <- upper <- Brier <- NULL
-		p1 <- (ggplot(df, aes(x = FPR, y = TPR, color = as.factor(times)))
+		df$times <- as.factor(df$times)
+		p1 <- (ggplot(df, aes(x = FPR, y = TPR, color = model))
 			+ geom_line(size = 1)
 			+ geom_abline(size = 1, colour = "grey")
-			+ facet_wrap(~model)
-			+ labs(x = "1-Specificity", y = "Sensitivity", colour = "Time")
+			+ facet_wrap(~times)
+			+ labs(x = "1-Specificity", y = "Sensitivity", colour = "Model")
 			+ scale_colour_viridis_d(option = "inferno")
 			+ theme(legend.position = "right")
 		)
@@ -327,7 +328,7 @@ plot.Score <- function(x, ..., type = c("roc", "auc", "brier"), pos = 0.3){
 			+ geom_point(position = position_dodge(pos))
 			+ geom_pointrange(aes(ymin = lower, ymax = upper), position = position_dodge(pos))
 			+ scale_colour_viridis_d(option = "inferno")
-			+ labs(x = "AUC", y = "Model", colour = "Time")
+			+ labs(x = "Model", y = "AUC", colour = "Time")
 			+ theme(legend.position = "right")
 		)
 	} else {

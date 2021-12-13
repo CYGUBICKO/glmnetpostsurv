@@ -40,7 +40,7 @@ Ignore += glmnetsurv_1*
 build-package:
 	R CMD build .
 
-install-package:
+install:
 	R CMD INSTALL glmnetsurv_1*
 
 check-package:

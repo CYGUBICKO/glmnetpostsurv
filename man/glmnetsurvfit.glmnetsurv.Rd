@@ -7,16 +7,14 @@
 \alias{glmnetbasehaz}
 \title{Compute survival curve and cumulative hazard from a glmnet model through glmnetsurv}
 \usage{
-\method{glmnetsurvfit}{glmnetsurv}(fit, newdata, survfit = FALSE, ...)
+\method{glmnetsurvfit}{glmnetsurv}(fit, newdata, ...)
 
-\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE, survfit = FALSE, truezero = FALSE)
+\method{glmnetbasehaz}{glmnetsurv}(fit, centered = TRUE)
 }
 \arguments{
 \item{fit}{fitted \code{\link[glmnetsurv]{glmnetsurv}} object}
 
 \item{newdata}{a matrix containing the variables appearing on the right hand side of the model formula of \code{\link[glmnetsurv]{glmnetsurv}} model.}
-
-\item{survfit}{logical value. If \code{TRUE}, survival function estimation is similar to that of \code{\link[survival]{survfit}}, otherwise \code{\link[glmnetsurv]{breslow}} is used.}
 
 \item{...}{for future implementations}
 

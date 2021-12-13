@@ -8,4 +8,4 @@ Description: A wrapper for survival modelling with glmnet package. It provides u
 License: GPL (>= 2)
 Depends: R (>= 3.5.0), glmnet
 Imports: survival, riskRegression, prodlim, ggplot2
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
