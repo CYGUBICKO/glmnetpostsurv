@@ -4,7 +4,7 @@
 \alias{concordScore}
 \title{Compute the concordance statistic for the pcoxtime model}
 \usage{
-concordScore(fit, newdata = NULL, stats = FALSE)
+concordScore(fit, newdata = NULL, stats = FALSE, reverse = TRUE, ...)
 }
 \arguments{
 \item{fit}{fitted \code{\link[glmnetsurv]{glmnetsurv}}, \code{\link[pcoxtime]{pcoxtime}}, \code{\link[survival]{coxph}}, etc.}

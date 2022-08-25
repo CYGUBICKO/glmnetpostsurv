@@ -5,11 +5,12 @@ library(splines)
 loadEnvironments()
 
 glmnetcv_mod <- glmnetsurvcv(mod_form
-	, data=df
+	, data=train_df
 )
 print(glmnetcv_mod)
 
-saveVars(df
+saveVars(train_df
+	, test_df
 	, mod_form
 	, glmnetcv_mod
 )

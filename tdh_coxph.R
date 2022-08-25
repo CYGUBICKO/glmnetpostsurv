@@ -5,13 +5,14 @@ library(splines)
 loadEnvironments()
 
 coxph_mod <- coxph(mod_form
-	, data=df
+	, data=train_df
 	, method="breslow"
 	, x=TRUE
 )
 print(coxph_mod)
 
-saveVars(df
+saveVars(train_df
+	, test_df
 	, mod_form
 	, coxph_mod
 )

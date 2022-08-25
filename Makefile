@@ -57,7 +57,7 @@ Ignore += glmnetsurv_1*
 build-package:
 	R CMD build .
 
-install:
+install-tarball:
 	R CMD INSTALL glmnetsurv_1*
 
 check-package:
@@ -65,6 +65,9 @@ check-package:
 
 update-doc:
 	echo "devtools::document('.')" | R --slave
+
+install:
+	$(MAKE) update-doc build-package install-tarball
 
 ######################################################################
 

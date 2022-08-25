@@ -343,7 +343,7 @@ predict.glmnetsurv <- function(object, ..., newdata = NULL
 #'
 #' @export
 
-concordScore <- function(fit, newdata = NULL, stats = FALSE){
+concordScore <- function(fit, newdata = NULL, stats = FALSE, reverse = TRUE, ...){
 	if (is.null(newdata)) {
 		risk <- predict(fit, type = "risk")
 		y <- fit$y
@@ -352,7 +352,7 @@ concordScore <- function(fit, newdata = NULL, stats = FALSE){
 		y <- model.extract(model.frame(fit$terms, data = newdata), "response")
 	}
 
-	conindex <- survival::survConcordance(y ~ risk)
+	conindex <- survival::concordance(y ~ risk, reverse = reverse, ...)
 	if (!stats){
 		conindex <- conindex$concordance
 	}

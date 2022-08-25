@@ -8,7 +8,7 @@ lam <- glmnetcv_mod$lambda.min
 lams <- glmnetcv_mod$lambdas.optimal
 alp <- glmnetcv_mod$alpha.optimal
 glmnet_mod <- glmnetsurv(mod_form
-	, data=df
+	, data=train_df
 	, lambda=lams
 	, s=lam
 	, alpha=alp
@@ -16,7 +16,8 @@ glmnet_mod <- glmnetsurv(mod_form
 print(glmnet_mod)
 plot(glmnet_mod, xvar="lambda", label=TRUE)
 
-saveVars(df
+saveVars(train_df
+	, test_df
 	, mod_form
 	, glmnet_mod
 )

@@ -10,7 +10,7 @@ glmnetsurv::gsurvtheme()
 # Evaluate model performance at 90, 180, 365 time points
 score_obj <- Score(list("coxph" = coxph_mod, "glmnet" = glmnet_mod)
 	, formula=Hist(entry=tstart,time=tstop,event=status)~1
-	, data = df[sample(1:nrow(df),100),]
+	, data = test_df
 	, plots = "roc"
 	, metrics = c("auc", "brier")
 	, B = 100
